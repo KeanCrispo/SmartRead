@@ -1,18 +1,19 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { UserProvider } from './contexts/UserContext';
 import Layout from './components/layout/Layout';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import StudentDashboard from './pages/dashboards/StudentDashboard';
-import TeacherDashboard from './pages/dashboards/TeacherDashboard';
+import AdminDashboard from './pages/dashboards/AdminDashboard';
 import GuardianDashboard from './pages/dashboards/GuardianDashboard';
 import LessonView from './pages/lessons/LessonView';
 import LessonsList from './pages/lessons/LessonsList';
 import LessonEdit from './pages/lessons/LessonEdit';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import PhotoWordVowelSelect from './pages/lessons/PhotoWordVowelSelect';
+import PhotoWordLesson from './pages/lessons/PhotoWordLesson';
 
 function App() {
   return (
@@ -33,19 +34,21 @@ function App() {
                     <Route index element={<StudentDashboard />} />
                     <Route path="lessons" element={<LessonsList userRole="student" />} />
                     <Route path="lessons/:lessonId" element={<LessonView />} />
+                    <Route path="lessons/photo-words" element={<PhotoWordVowelSelect />} />
+                    <Route path="lessons/photo-words/:vowel" element={<PhotoWordLesson />} />
                   </Routes>
                 </ProtectedRoute>
               } 
             />
             
-            {/* Teacher Routes */}
+            {/* Admin Routes */}
             <Route 
-              path="teacher/*" 
+              path="admin/*" 
               element={
-                <ProtectedRoute allowedRoles={['teacher']}>
+                <ProtectedRoute allowedRoles={['admin']}>
                   <Routes>
-                    <Route index element={<TeacherDashboard />} />
-                    <Route path="lessons" element={<LessonsList userRole="teacher" />} />
+                    <Route index element={<AdminDashboard />} />
+                    <Route path="lessons" element={<LessonsList userRole="admin" />} />
                     <Route path="lessons/create" element={<LessonEdit mode="create" />} />
                     <Route path="lessons/:lessonId" element={<LessonView />} />
                     <Route path="lessons/:lessonId/edit" element={<LessonEdit mode="edit" />} />
