@@ -1,9 +1,16 @@
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = 'https://YOUR_PROJECT_ID.supabase.co';
+const supabaseAnonKey = 'YOUR_ANON_KEY';
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
 /*
   # Initial Schema for SmartRead Platform
 
   1. New Tables
     - profiles (user information linked to auth)
-    - lessons (lesson content created by teachers)
+    - lessons (lesson content created by admins)
     - lesson_progress (student progress tracking)
     - student_guardians (student-guardian relationships)
   
@@ -17,7 +24,7 @@
 CREATE TABLE IF NOT EXISTS profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   username text NOT NULL UNIQUE,
-  role text NOT NULL CHECK (role IN ('student', 'teacher', 'guardian')),
+  role text NOT NULL CHECK (role IN ('student', 'admin', 'guardian')),
   full_name text,
   grade_level text,
   created_at timestamptz DEFAULT now(),
@@ -32,7 +39,7 @@ CREATE TABLE IF NOT EXISTS lessons (
   content text,
   difficulty text NOT NULL CHECK (difficulty IN ('easy', 'medium', 'hard')),
   file_path text,
-  teacher_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  admin_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -86,7 +93,7 @@ CREATE POLICY "Anyone can view lessons"
   TO authenticated
   USING (true);
 
-CREATE POLICY "Teachers can create lessons"
+CREATE POLICY "Admins can create lessons"
   ON lessons
   FOR INSERT
   TO authenticated
@@ -94,11 +101,11 @@ CREATE POLICY "Teachers can create lessons"
     EXISTS (
       SELECT 1 FROM profiles
       WHERE id = auth.uid()
-      AND role = 'teacher'
+      AND role = 'admin'
     )
   );
 
-CREATE POLICY "Teachers can update their own lessons"
+CREATE POLICY "Admins can update their own lessons"
   ON lessons
   FOR UPDATE
   TO authenticated
@@ -106,20 +113,20 @@ CREATE POLICY "Teachers can update their own lessons"
     EXISTS (
       SELECT 1 FROM profiles
       WHERE id = auth.uid()
-      AND role = 'teacher'
-      AND id = teacher_id
+      AND role = 'admin'
+      AND id = admin_id
     )
   )
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM profiles
       WHERE id = auth.uid()
-      AND role = 'teacher'
-      AND id = teacher_id
+      AND role = 'admin'
+      AND id = admin_id
     )
   );
 
-CREATE POLICY "Teachers can delete their own lessons"
+CREATE POLICY "Admins can delete their own lessons"
   ON lessons
   FOR DELETE
   TO authenticated
@@ -127,8 +134,8 @@ CREATE POLICY "Teachers can delete their own lessons"
     EXISTS (
       SELECT 1 FROM profiles
       WHERE id = auth.uid()
-      AND role = 'teacher'
-      AND id = teacher_id
+      AND role = 'admin'
+      AND id = admin_id
     )
   );
 
@@ -142,7 +149,7 @@ CREATE POLICY "Students can view their own progress"
     EXISTS (
       SELECT 1 FROM profiles
       WHERE id = auth.uid()
-      AND role = 'teacher'
+      AND role = 'admin'
     ) OR
     EXISTS (
       SELECT 1 FROM student_guardians
@@ -175,11 +182,11 @@ CREATE POLICY "Guardians can view their student connections"
     EXISTS (
       SELECT 1 FROM profiles
       WHERE id = auth.uid()
-      AND role = 'teacher'
+      AND role = 'Admin'
     )
   );
 
-CREATE POLICY "Teachers can manage student-guardian connections"
+CREATE POLICY "Admins can manage student-guardian connections"
   ON student_guardians
   FOR ALL
   TO authenticated
@@ -187,12 +194,12 @@ CREATE POLICY "Teachers can manage student-guardian connections"
     EXISTS (
       SELECT 1 FROM profiles
       WHERE id = auth.uid()
-      AND role = 'teacher'
+      AND role = 'admin'
     )
   );
 
 -- Create indexes for better query performance
-CREATE INDEX IF NOT EXISTS idx_lessons_teacher_id ON lessons(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_lessons_admin_id ON lessons(admin_id);
 CREATE INDEX IF NOT EXISTS idx_lesson_progress_student_id ON lesson_progress(student_id);
 CREATE INDEX IF NOT EXISTS idx_lesson_progress_lesson_id ON lesson_progress(lesson_id);
 CREATE INDEX IF NOT EXISTS idx_student_guardians_student_id ON student_guardians(student_id);
